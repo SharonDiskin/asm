@@ -1,8 +1,6 @@
 ; Written by: Sharon Diskin
-; This program gets a matrix of words, convert it to a binary matrix, multiply the matrix by itself and converts the result to a string.
 
 include Irvine32.inc
-include asm2_q3_data.inc
 
 .data
 K = 6
