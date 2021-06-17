@@ -1,0 +1,110 @@
+; Written by: Sharon Diskin
+; This program gets a matrix of words, convert it to a binary matrix, multiply the matrix by itself and converts the result to a string.
+
+include Irvine32.inc
+include asm2_q3_data.inc
+
+.data
+K = 6
+A WORD 6, 1, 2, 1, 2, 5, 6 , 2
+N = LENGTHOF A
+CC WORD K DUP (?)
+B WORD N DUP (?)
+
+
+
+.code
+
+func PROC USES esi edi edx ecx ebx eax
+	KK = 32
+	NN = KK+4
+	BARR = NN+4
+	CCARR = BARR+4
+	AARR = CCARR+4
+	PUSH EBP
+	MOV EBP, ESP
+	MOV ESI, [EBP+CCARR] ; ESI = OFFSET CC
+	MOV ECX, [EBP+KK] ; ECX = K
+
+	L1:
+		MOV WORD PTR[ESI], 0
+		ADD ESI, 2
+	LOOP L1
+
+	MOV ESI, [EBP+CCARR] ; RESTORE ESI TO POINT AT CC
+	MOV EDI, [EBP+AARR] ; EDI = OFFSET A
+	MOV ECX, [EBP+NN] ; ECX = N
+
+	L2:
+		MOVZX EDX, word ptr[EDI] ; EDX = A[i]
+		SHL EDX, 1
+		INC WORD PTR[ESI + EDX - 2] ; C[A[i]-1]+=1
+		ADD EDI, 2
+	LOOP L2
+
+	MOV EDI, [EBP + AARR] ; RESTORE EDI TO POINT AT A
+	MOV EDX, 2 ; EDX WILL be i (index of loop)
+	MOV ECX, [EBP+KK] ; ECX = K
+	DEC ECX ; LOOP RUNS FROM 1 TO K MEANING K-1 TIMES
+
+	L3:
+		MOV EBX, 0
+		MOV BX, WORD PTR[ESI + EDX - 2] ; EBX = C[i-1]
+		ADD WORD PTR[ESI + EDX], BX ; C[i] += c[i-1]
+		ADD EDX, 2 ; increament loop counter i 
+	LOOP L3
+
+	MOV EDX, [EBP+NN]
+	SHL EDX, 1 ; EDX = N (in 'word' percpective)
+	SUB EDX, 2 ; EDX = N-1
+	MOV ECX, [EBP+NN] ; ECX = N
+	MOV EAX, [EBP+BARR] ; EAX = OFFSET B
+
+	L4:
+		PUSH ECX ; WE PUSH ECX TO STACK BECAUSE WE NEED TO USE IT
+		MOV ECX, 0
+		MOV EBX, 0
+		MOVZX ECX, WORD PTR[EDI + EDX] ; CX = A[i]
+		SHL ECX, 1
+		MOVZX EBX, WORD PTR[ESI + ECX - 2] ; BX = C[A[i] - 1]
+		SHL EBX, 1
+		SHR ECX, 1
+		MOV WORD PTR [EAX + EBX - 2], CX ; B[(C[A[i]-1]-1] = A[i]
+		SHL ECX, 1
+		DEC WORD PTR[ESI + ECX - 2] ; C[A[i]-1] -=1
+		POP ECX ; WE RESOTRE ECX
+		SUB EDX, 2
+	LOOP L4
+
+	MOV ESP, EBP
+	POP EBP
+	RET 20
+ 
+func ENDP
+
+
+
+main PROC
+
+	PUSH OFFSET A
+	PUSH OFFSET CC
+	PUSH OFFSET B
+	PUSH N
+	PUSH K
+	CALL func
+
+	XOR EAX, EAX
+	MOV ECX, N
+	MOV EBX, 0
+
+	LOOPY:
+		MOV AX, [B+EBX*2]
+		CALL WRITEDEC
+		MOV AL, ' '
+		CALL WRITECHAR
+		INC EBX
+		LOOP LOOPY
+
+	EXIT
+MAIN ENDP
+END main
